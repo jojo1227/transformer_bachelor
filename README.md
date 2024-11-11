@@ -28,6 +28,7 @@
    - **Training Loop**: Erstelle in deinem `train.py` eine klare Trainingsschleife. Achte darauf, das Modell in den Trainings- und Evaluationsmodus zu setzen (`model.train()` und `model.eval()`).
    - **Loss und Optimizer**: Nutze PyTorch-Klassen wie `torch.optim` für den Optimierer und `nn.CrossEntropyLoss` oder andere Loss-Funktionen, je nach Anwendungsfall.
    - **Überwachen von Metriken**: Logge wichtige Metriken wie Verlust, Genauigkeit, F1-Score, um die Trainingsleistung zu überwachen.
+   - ![hier](https://mlflow.org/docs/latest/getting-started/index.html) zur ML Flow Dokumentation
 
 ## 6. Logging und Visualisierung
    - Nutze `TensorBoard`, `Weights & Biases`, oder `MLflow` für eine bessere Visualisierung und Nachverfolgbarkeit.
