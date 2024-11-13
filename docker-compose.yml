@@ -1,0 +1,23 @@
+
+
+services:
+  db:
+    image: postgres:15.4
+    container_name: postgres-local
+    environment:
+      POSTGRES_USER: studi
+      POSTGRES_PASSWORD: studi
+      POSTGRES_DB: cadets-e3-local
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+
+
+#cloning the data from the remote host 
+#pg_dump -h [remote-host] -U [remote-username] [remote-db] | docker exec -i postgres-local psql -U postgres mydatabase
+#pg_dump -h localhost -p 5432 -U studi -d cadets-e3 | docker exec -i postgres-local psql -U studi cadets-e3-local

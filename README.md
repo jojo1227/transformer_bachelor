@@ -17,6 +17,7 @@
    - Verwende eine Konfigurationsdatei (z. B. `config.yaml`), um alle wichtigen Hyperparameter, Datenpfade und Modellparameter zentral zu speichern. Tools wie `yaml` oder `argparse` helfen dabei, die Konfiguration in deinen Code zu laden.
 
 ## 3. Datenverarbeitung
+   - ![hier](https://github.com/JannikRosendahl/bachelor_thesis_dataset) das Repo von JannikRosendahl zur Dat
    - **Dataloader**: Nutze PyTorch `DataLoader` und `Dataset`, um die Daten in Mini-Batches zu verarbeiten und effizient mit mehreren Prozessen zu laden.
    - **Datenvorverarbeitung**: Lege die Datenvorbereitung in separate Skripte in deinem `data/`-Ordner. Dies ermöglicht eine schnelle Anpassung, wenn du verschiedene Datenvorbereitungs-Pipelines testen möchtest.
 
