@@ -9,15 +9,29 @@ services:
       POSTGRES_PASSWORD: studi
       POSTGRES_DB: cadets-e3-local
     ports:
-      - "5433:5432"
+      - "7654:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
 
 volumes:
   postgres-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: /Users/johannes/Documents/uni/transformer_bachelor/docker_volume
+      o: bind
+    
 
 
 #cloning the data from the remote host 
 #pg_dump -h [remote-host] -U [remote-username] [remote-db] | docker exec -i postgres-local psql -U postgres mydatabase
-#pg_dump -h localhost -p 5432 -U studi -d cadets-e3 | docker exec -i postgres-local psql -U studi cadets-e3-local
+#pg_dump -h localhost -p 6543 -U studi -d cadets_e3_v2 | docker exec -i postgres-local psql -U studi cadets-e3-local
+#password: 6Dv_k4v7B3(y
+
+#for the initial clenaup of the database
+#docker exec -i container_name mysql -u username -p database_name < /path/on/host/script.sql
+#docker exec -i postgres-local psql -U studi -d cadets-e3-local < /data/initial_cleanup.sql
+
+#connection to cadets-e3 database, port habe ich geändert
+#ssh -L 6543:trustdatastore.inform.hs-hannover.de:5432 8zm-078-u1@ssh.inform.hs-hannover.de
