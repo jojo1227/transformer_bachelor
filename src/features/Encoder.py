@@ -48,7 +48,7 @@ class Encoder:
         return encoded_sequences, encoded_targets
     
     
-    def split_long_sequences(self, sequences: List[List[str]], targets: List[str]) -> Tuple[List[List[str]], List[str]]:
+    def split_long_sequences(self, sequences: List[List[int]], targets: List[int]) -> Tuple[List[List[int]], List[int]]:
         """
         Teilt Sequenzen auf, die länger als max_sequence_length sind.
         Verwendet einen überlappenden Ansatz, um Kontext zu bewahren.
@@ -82,7 +82,7 @@ class Encoder:
         return new_sequences, new_targets
     
     
-    def pad_sequences(self, sequences: List[List[int]], padding: str = 'post') -> np.ndarray:
+    def pad_sequences(self, sequences: List[List[int]]) -> np.ndarray:
         """
         Bringt alle Sequenzen auf die gleiche Länge durch Padding.
         

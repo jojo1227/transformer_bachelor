@@ -1,0 +1,16 @@
+data:
+  max_seq_length: 512
+  num_classes: 41
+  vocab_size: 31
+
+
+model:
+  embedding_dim: 256
+  num_encoder_layers: 6
+  num_heads: 8
+  dropout_rate: 0.1
+
+training:
+  batch_size: 64
+  num_epochs: 100
+  learning_rate: 0.001

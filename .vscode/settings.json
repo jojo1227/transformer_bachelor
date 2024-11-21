@@ -1,8 +1,6 @@
 {
     "jupyter.notebookFileRoot": "/Users/johannes/Documents/Uni/transformer_bachelor",
-    "todo-tree.regex": "((//|#|<!--|;|\\*)\\s*(TODO|FIXME|NOTE))",
     "jupyter.jupyterCommandLineArguments": [
 
     ],
-    "todo-tree.regex.regex": "((//|#|<!--|;|\\*)\\s*(TODO|FIXME|NOTE))"
 }
