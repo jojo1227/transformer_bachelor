@@ -25,7 +25,7 @@ class Embedding(nn.Module):
         self.max_len = max_len
         
         # Embedding Layer mit optionalem Padding Index
-        # @TODO Wofür ist dieser Padding index nötig?
+        # TODO Wofür ist dieser Padding index nötig?
         self.token_embedding = nn.Embedding(
             num_embeddings=vocab_size,
             embedding_dim=embedding_dim,
