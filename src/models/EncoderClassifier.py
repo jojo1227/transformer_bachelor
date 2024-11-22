@@ -44,31 +44,36 @@ class EncoderClassifier(nn.Module):
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=embedding_dim,
             nhead=num_heads,
-            dim_feedforward=4 * embedding_dim, #default ist hier 2048 
-            dropout=dropout_rate,
-            activation='gelu', #standard ist relu, gelu soll aber angeblich besser sein
+            # dim_feedforward=4 * embedding_dim, #default ist hier 2048 
+            # dropout=dropout_rate,
+            # activation='gelu', #standard ist relu, gelu soll aber angeblich besser sein
             batch_first=True
         )
         
         self.encoder = nn.TransformerEncoder(
             encoder_layer,
-            num_layers=num_encoder_layers,
-            norm=nn.LayerNorm(embedding_dim)
+            num_layers=num_encoder_layers
+            # norm=nn.LayerNorm(embedding_dim)
         )
         
         # Dropout für Regularisierung
         self.dropout = nn.Dropout(dropout_rate)
         
         # Klassifikations-Layer
-        self.classifier = nn.Sequential(
-            nn.Linear(embedding_dim, embedding_dim),
-            nn.GELU(),
-            nn.Dropout(dropout_rate),
-            nn.Linear(embedding_dim, num_classes)
-        )
+        # TODO Wie muss ich den hier genau gestalten. 
+        # ist das zu kompliziert? 
+        # self.classifier = nn.Sequential(
+        #    nn.Linear(embedding_dim, embedding_dim),
+        #    nn.GELU(),
+        #    nn.Dropout(dropout_rate),
+        #    nn.Linear(embedding_dim, num_classes)
+        #)
+        
+        self.classifier = nn.Linear(embedding_dim, num_classes)
         
         # Parameter Initialisierung
-        self._init_weights()
+        # TODO macht das hier einen Unterschied mit dem init weigths 
+        # self._init_weights()
         
     def _init_weights(self):
         """Initialisiert die Gewichte des Models"""

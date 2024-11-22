@@ -34,11 +34,6 @@ class Embedding(nn.Module):
         # Dropout Layer
         self.dropout = nn.Dropout(p=dropout_rate)
         
-        # Positional Encoding auf dem Device erstellen
-        self.register_buffer(
-            'positional_encoding',
-            self._create_positional_encoding(max_len, embedding_dim)
-        )
         
     def _create_positional_encoding(self, max_len: int, embedding_dim: int) -> torch.Tensor:
         """
@@ -60,6 +55,7 @@ class Embedding(nn.Module):
         pos_encoding[:, 0::2] = torch.sin(position * div_term)
         pos_encoding[:, 1::2] = torch.cos(position * div_term)
         
+        # TODO Warum? 
         return pos_encoding.unsqueeze(0)
     
     def forward(self, x: torch.Tensor, attention_mask: Optional[torch.Tensor] = None) -> torch.Tensor:

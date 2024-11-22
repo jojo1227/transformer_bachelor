@@ -23,6 +23,7 @@ class SequenceEventProcessor:
         db.conn.commit()
     
     def process_sequence_events(self):
+        # TODO Ich habe unterschiedliche Ergebnisse in der Länge. Passt das?
         query = '''
         WITH sequences AS (
             SELECT sequence_id, subject_uuid, executable, instance_number

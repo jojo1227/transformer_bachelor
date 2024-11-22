@@ -4,9 +4,9 @@ data:
   vocab_size: 31
 model:
   dropout_rate: 0.1
-  embedding_dim: 256
-  num_encoder_layers: 6
-  num_heads: 8
+  embedding_dim: 512
+  num_encoder_layers: 3
+  num_heads: 4
 training:
   batch_size: 64
   learning_rate: 0.001

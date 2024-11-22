@@ -48,14 +48,26 @@ class Encoder:
         return encoded_sequences, encoded_targets
     
     
-    def split_long_sequences(self, sequences: List[List[int]], targets: List[int]) -> Tuple[List[List[int]], List[int]]:
+    def split_long_sequences(
+        self, 
+        sequences: List[List[int]], 
+        targets: List[int], 
+        overlap_ratio: float = 0.25
+    ) -> Tuple[List[List[int]], List[int]]:
         """
         Teilt Sequenzen auf, die länger als max_sequence_length sind.
-        Verwendet einen überlappenden Ansatz, um Kontext zu bewahren.
+        Verwendet einen konfigurierbaren überlappenden Ansatz zur Kontextbewahrung.
+        
+        :param sequences: Liste der ursprünglichen Sequenzen
+        :param targets: Zugehörige Ziellabels
+        :param overlap_ratio: Anteil der Überlappung (0 bis 1)
+        :return: Tuple aus aufgeteilten Sequenzen und Targets
         """
         new_sequences = []
         new_targets = []
-        overlap = self.max_sequence_length // 4  # 25% Überlappung
+        
+        # Berechne Überlappung in absoluten Werten
+        overlap = int(self.max_sequence_length * max(0, min(overlap_ratio, 1)))
         
         for seq, target in zip(sequences, targets):
             if len(seq) <= self.max_sequence_length:
@@ -71,7 +83,6 @@ class Encoder:
                     sub_sequence = seq[start:end]
                     
                     # Füge nur Teilsequenzen hinzu, die lang genug sind
-                    # Dies soll verhindern, das kurze Sequenzen am ende einer langen Sequenz die Daten verzerren
                     if len(sub_sequence) >= self.max_sequence_length // 2:
                         new_sequences.append(sub_sequence)
                         new_targets.append(target)
@@ -80,7 +91,6 @@ class Encoder:
                     start = end - overlap
         
         return new_sequences, new_targets
-    
     
     def pad_sequences(self, sequences: List[List[int]]) -> np.ndarray:
         """

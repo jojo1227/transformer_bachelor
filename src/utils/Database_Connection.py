@@ -25,3 +25,8 @@ class DatabaseConnection:
                 self.cur.close()
             if self.conn:
                 self.conn.close()
+    def getConnection(self):
+        return self.conn
+    
+    def getCursor(self):
+        return self.cur

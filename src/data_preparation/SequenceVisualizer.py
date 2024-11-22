@@ -45,7 +45,7 @@ class SequenceVisualizer:
         
         return labels_filtered, sizes_filtered
     
-    def pie_chart_from_query(self, query, output_path, threshold=0.01, figsize_cm=20):
+    def pie_chart_from_query(self, query, output_path: str = None, threshold: float = 0.01, figsize_cm: int = 20):
         """
         Erstellt ein Pie-Chart direkt aus einer SQL-Abfrage
         
@@ -55,26 +55,32 @@ class SequenceVisualizer:
             threshold (float, optional): Gruppierungsschwelle. Defaults to 0.01.
             figsize_cm (int, optional): Figurengröße in Zentimetern. Defaults to 20.
         """
-        # Cursor erstellen und Abfrage ausführen
-        with self.conn.cursor() as cur:
-            cur.execute(query)
-            result = cur.fetchall()
         
-        # Daten extrahieren
-        labels = [row[0] for row in result]
-        sizes = [row[1] for row in result]
-        
-        # Kleine Kategorien gruppieren
-        labels, sizes = self.group_bottom_percent(labels, sizes, threshold)
-        
-        # Figure und Plot erstellen
-        fig, ax = plt.subplots()
-        ax.pie(sizes, labels=labels, autopct='%1.1f%%', textprops={'size': 'medium'})
-        ax.axis('equal')
-        
-        # Größe setzen
-        fig.set_size_inches((self.cm_to_inches(figsize_cm), self.cm_to_inches(figsize_cm)))
-        
-        # Speichern und schließen
-        plt.savefig(output_path)
-        plt.close()
+        with self.conn.connect() as conn:
+            
+            # Cursor erstellen und Abfrage ausführen
+            with self.conn.cur as cur:
+                cur.execute(query)
+                result = cur.fetchall()
+            
+            # Daten extrahieren
+            labels = [row[0] for row in result]
+            sizes = [row[1] for row in result]
+            
+            # Kleine Kategorien gruppieren
+            labels, sizes = self.group_bottom_percent(labels, sizes, threshold)
+            
+            # Figure und Plot erstellen
+            fig, ax = plt.subplots()
+            ax.pie(sizes, labels=labels, autopct='%1.1f%%', textprops={'size': 'medium'})
+            ax.axis('equal')
+            
+            # Größe setzen
+            fig.set_size_inches((self.cm_to_inches(figsize_cm), self.cm_to_inches(figsize_cm)))
+            
+            # Speichern und schließen
+            plt.show()
+            
+            if(output_path is not None):
+                plt.savefig(output_path)
+            plt.close()
