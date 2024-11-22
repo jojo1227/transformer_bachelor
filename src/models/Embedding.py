@@ -33,6 +33,7 @@ class Embedding(nn.Module):
         
         # Dropout Layer
         self.dropout = nn.Dropout(p=dropout_rate)
+        self.positional_encoding = self._create_positional_encoding(max_len, embedding_dim)
         
         
     def _create_positional_encoding(self, max_len: int, embedding_dim: int) -> torch.Tensor:
@@ -74,7 +75,7 @@ class Embedding(nn.Module):
         
         # Positional Encoding hinzufügen
         seq_len = x.size(1)
-        embeddings = embeddings + self.positional_encoding[:, :seq_len]
+        embeddings = embeddings + self.positional_encoding[:, :seq_len].to("cuda")
         
         # Wenn Attention Mask vorhanden, maskierte Positionen auf 0 setzen
         if attention_mask is not None:
