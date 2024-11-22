@@ -101,7 +101,7 @@ class Trainer:
         for sequences, targets in progress_bar:
             # Daten auf device verschieben
             sequences = sequences.to(self.device)
-            labels = labels.to(self.device)
+            labels = targets.to(self.device)
             
             # Forward pass
             outputs = self.model(sequences)
