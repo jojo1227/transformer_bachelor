@@ -1,4 +1,5 @@
 /* drop redundant tables */
+
 drop table event_import;
 drop table host;
 

@@ -131,3 +131,7 @@ class SequenceProcessor:
             self.stats['sequences_by_subject'] += 1
         else:
             self.stats['sequences_by_executable'] += 1
+            
+            
+
+        
