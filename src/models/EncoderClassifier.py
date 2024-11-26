@@ -120,11 +120,9 @@ class EncoderClassifier(nn.Module):
         # TODO also try class token
         # TODO take mean instead of max, only take mean over entries where attention mask is 1
         x = torch.sum(x * attention_mask[..., None], dim=1) / (torch.sum(attention_mask[..., None], dim=1) + 1e-8)
-        print(x.shape)
         
         # Klassifikation
         logits = self.classifier(x)
-        print(logits.shape)
         
         return logits
     

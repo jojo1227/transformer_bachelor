@@ -45,6 +45,7 @@ class Encoder:
         encoded_sequences = [[self.event_to_idx[event] for event in seq] for seq in sequences]
         
         # Konvertiere Targets zu Indices
+        # TODO muss ich die Targets überhaupt encoden? Macht das überhaupt sinn? 
         encoded_targets = np.array([self.executable_to_idx[exe] for exe in targets])
         
         return encoded_sequences, encoded_targets

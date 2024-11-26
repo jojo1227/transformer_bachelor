@@ -5,6 +5,8 @@ from tqdm import tqdm
 import numpy as np
 from typing import Dict, List, Optional
 import matplotlib.pyplot as plt
+from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
+import seaborn as sns
 
 class Trainer:
     def __init__(
@@ -17,77 +19,110 @@ class Trainer:
         device: str = "cuda" if torch.cuda.is_available() else "cpu"
     ):
         """
+        Initialize Trainer with model, data loaders, and training parameters.
+        
         Args:
-            model: Das zu trainierende Modell
-            train_loader: DataLoader für Trainingsdaten
-            val_loader: DataLoader für Validierungsdaten (optional)
-            learning_rate: Lernrate für den Optimizer
-            device: Device für das Training ("cuda" oder "cpu")
+            model: The model to be trained
+            train_loader: DataLoader for training data
+            val_loader: Optional DataLoader for validation data
+            optimizer: Optimizer for training
+            criterion: Loss function
+            device: Training device (cuda or cpu)
         """
         self.model = model.to(device)
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.device = device
         
-        # Optimizer und Loss
+        # Optimizer and Loss
         self.optimizer = optimizer
         self.criterion = criterion
         
-        # Für Tracking der Metriken
+        # Metrics tracking
         self.train_losses: List[float] = []
         self.val_losses: List[float] = []
         self.train_accuracies: List[float] = []
         self.val_accuracies: List[float] = []
         
+        # Additional metrics tracking
+        self.train_precisions: List[float] = []
+        self.train_recalls: List[float] = []
+        self.train_f1_scores: List[float] = []
+        self.val_precisions: List[float] = []
+        self.val_recalls: List[float] = []
+        self.val_f1_scores: List[float] = []
+    
     def train_epoch(self) -> Dict[str, float]:
-        """Trainiert das Modell für eine Epoche."""
+        """Train the model for one epoch and collect detailed metrics."""
         self.model.train()
         total_loss = 0
         correct_predictions = 0
         total_predictions = 0
         
+        # Lists to collect predictions and labels for detailed metrics
+        all_predictions = []
+        all_labels = []
+        
         # Progress bar
         progress_bar = tqdm(self.train_loader, desc="Training")
         
         for sequences, labels, attention_masks in progress_bar:
-            # Daten auf device verschieben
+            # Move data to device
             sequences = sequences.to(self.device)
             labels = labels.to(self.device)
             attention_masks = attention_masks.to(self.device)
             
+            # Zero gradients
+            self.optimizer.zero_grad()
+            
             # Forward pass
-            self.optimizer.zero_grad() #Gradienten werden zurückgesetzt
             outputs = self.model(sequences, attention_masks)  
             
-            # Loss berechnen
+            # Compute loss
             loss = self.criterion(outputs, labels)
             
             # Backward pass
             loss.backward()
             self.optimizer.step()
             
-            # Metriken berechnen
+            # Compute metrics
             total_loss += loss.item()
             predictions = torch.argmax(outputs, dim=1)
             correct_predictions += (predictions == labels).sum().item()
             total_predictions += labels.size(0)
             
-            # Progress bar updaten
+            # Collect predictions for detailed metrics
+            all_predictions.extend(predictions.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+            
+            # Update progress bar
             progress_bar.set_postfix({
                 'loss': f"{loss.item():.4f}",
                 'acc': f"{correct_predictions/total_predictions:.4f}"
             })
-            
-        # Durchschnittliche Metriken berechnen
+        
+        # Compute average metrics
         avg_loss = total_loss / len(self.train_loader)
         accuracy = correct_predictions / total_predictions
         
-        return {'loss': avg_loss, 'accuracy': accuracy}
-    
+        # Compute additional metrics
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            all_labels, all_predictions, average='weighted'
+        )
+        confusion_mat = confusion_matrix(all_labels, all_predictions)
+        
+        return {
+            'loss': avg_loss, 
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1_score': f1,
+            'confusion_matrix': confusion_mat
+        }
     
     @torch.no_grad()
     def validate(self) -> Dict[str, float]:
-        """Validiert das Modell auf dem Validierungsset."""
+        """Validate the model on validation dataset."""
         if not self.val_loader:
             return {}
         
@@ -96,11 +131,14 @@ class Trainer:
         correct_predictions = 0
         total_predictions = 0
         
+        # Lists to collect predictions and labels for detailed metrics
+        all_predictions = []
+        all_labels = []
+        
         progress_bar = tqdm(self.val_loader, desc="Validating")
-
         
         for sequences, targets, attention_masks in progress_bar:
-            # Daten auf device verschieben
+            # Move data to device
             sequences = sequences.to(self.device)
             labels = targets.to(self.device)
             attention_masks = attention_masks.to(self.device)
@@ -109,17 +147,34 @@ class Trainer:
             outputs = self.model(sequences, attention_masks)
             loss = self.criterion(outputs, labels)
             
-            # Metriken berechnen
+            # Compute metrics
             total_loss += loss.item()
             predictions = torch.argmax(outputs, dim=1)
             correct_predictions += (predictions == labels).sum().item()
             total_predictions += labels.size(0)
+            
+            # Collect predictions for detailed metrics
+            all_predictions.extend(predictions.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
         
-        # Durchschnittliche Metriken berechnen
+        # Compute average metrics
         avg_loss = total_loss / len(self.val_loader)
         accuracy = correct_predictions / total_predictions
         
-        return {'loss': avg_loss, 'accuracy': accuracy}
+        # Compute additional metrics
+        precision, recall, f1, _ = precision_recall_fscore_support(
+            all_labels, all_predictions, average='weighted'
+        )
+        confusion_mat = confusion_matrix(all_labels, all_predictions)
+        
+        return {
+            'loss': avg_loss, 
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1_score': f1,
+            'confusion_matrix': confusion_mat
+        }
     
     def train(
         self,
@@ -128,12 +183,12 @@ class Trainer:
         early_stopping_patience: int = 5
     ):
         """
-        Trainiert das Modell für mehrere Epochen.
+        Train the model for multiple epochs with early stopping.
         
         Args:
-            num_epochs: Anzahl der Epochen
-            save_path: Pfad zum Speichern des besten Modells
-            early_stopping_patience: Anzahl der Epochen zu warten bevor Training gestoppt wird
+            num_epochs: Number of training epochs
+            save_path: Path to save the best model
+            early_stopping_patience: Epochs to wait before stopping training
         """
         best_val_loss = float('inf')
         patience_counter = 0
@@ -145,15 +200,32 @@ class Trainer:
             train_metrics = self.train_epoch()
             self.train_losses.append(train_metrics['loss'])
             self.train_accuracies.append(train_metrics['accuracy'])
+            self.train_precisions.append(train_metrics.get('precision', 0))
+            self.train_recalls.append(train_metrics.get('recall', 0))
+            self.train_f1_scores.append(train_metrics.get('f1_score', 0))
+            
+            # Detailed training metrics output
+            print(f"Train Loss: {train_metrics['loss']:.4f}")
+            print(f"Train Accuracy: {train_metrics['accuracy']:.4f}")
+            print(f"Train Precision: {train_metrics.get('precision', 'N/A'):.4f}")
+            print(f"Train Recall: {train_metrics.get('recall', 'N/A'):.4f}")
+            print(f"Train F1-Score: {train_metrics.get('f1_score', 'N/A'):.4f}")
             
             # Validation
             if self.val_loader:
                 val_metrics = self.validate()
                 self.val_losses.append(val_metrics['loss'])
                 self.val_accuracies.append(val_metrics['accuracy'])
+                self.val_precisions.append(val_metrics.get('precision', 0))
+                self.val_recalls.append(val_metrics.get('recall', 0))
+                self.val_f1_scores.append(val_metrics.get('f1_score', 0))
                 
-                print(f"Train Loss: {train_metrics['loss']:.4f}, Train Acc: {train_metrics['accuracy']:.4f}")
-                print(f"Val Loss: {val_metrics['loss']:.4f}, Val Acc: {val_metrics['accuracy']:.4f}")
+                # Detailed validation metrics output
+                print(f"Val Loss: {val_metrics['loss']:.4f}")
+                print(f"Val Accuracy: {val_metrics['accuracy']:.4f}")
+                print(f"Val Precision: {val_metrics.get('precision', 'N/A'):.4f}")
+                print(f"Val Recall: {val_metrics.get('recall', 'N/A'):.4f}")
+                print(f"Val F1-Score: {val_metrics.get('f1_score', 'N/A'):.4f}")
                 
                 # Early Stopping & Model Saving
                 if val_metrics['loss'] < best_val_loss:
@@ -161,36 +233,72 @@ class Trainer:
                     patience_counter = 0
                     if save_path:
                         torch.save(self.model.state_dict(), save_path)
+                    self.plot_confusion_matrix(val_metrics)
                 else:
                     patience_counter += 1
                     if patience_counter >= early_stopping_patience:
                         print(f"\nEarly stopping triggered after epoch {epoch+1}")
                         break
-            else:
-                print(f"Train Loss: {train_metrics['loss']:.4f}, Train Acc: {train_metrics['accuracy']:.4f}")
     
     def plot_metrics(self):
-        """Plottet die Trainings- und Validierungsmetriken."""
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
+        """Plot training and validation metrics."""
+        fig, axs = plt.subplots(2, 2, figsize=(15, 10))
         
         # Loss Plot
-        ax1.plot(self.train_losses, label='Training Loss')
+        axs[0, 0].plot(self.train_losses, label='Training Loss')
         if self.val_loader:
-            ax1.plot(self.val_losses, label='Validation Loss')
-        ax1.set_title('Loss over epochs')
-        ax1.set_xlabel('Epoch')
-        ax1.set_ylabel('Loss')
-        ax1.legend()
+            axs[0, 0].plot(self.val_losses, label='Validation Loss')
+        axs[0, 0].set_title('Loss over epochs')
+        axs[0, 0].set_xlabel('Epoch')
+        axs[0, 0].set_ylabel('Loss')
+        axs[0, 0].legend()
         
         # Accuracy Plot
-        ax2.plot(self.train_accuracies, label='Training Accuracy')
+        axs[0, 1].plot(self.train_accuracies, label='Training Accuracy')
         if self.val_loader:
-            ax2.plot(self.val_accuracies, label='Validation Accuracy')
-        ax2.set_title('Accuracy over epochs')
-        ax2.set_xlabel('Epoch')
-        ax2.set_ylabel('Accuracy')
-        ax2.legend()
+            axs[0, 1].plot(self.val_accuracies, label='Validation Accuracy')
+        axs[0, 1].set_title('Accuracy over epochs')
+        axs[0, 1].set_xlabel('Epoch')
+        axs[0, 1].set_ylabel('Accuracy')
+        axs[0, 1].legend()
+        
+        # Precision Plot
+        axs[1, 0].plot(self.train_precisions, label='Training Precision')
+        if self.val_loader:
+            axs[1, 0].plot(self.val_precisions, label='Validation Precision')
+        axs[1, 0].set_title('Precision over epochs')
+        axs[1, 0].set_xlabel('Epoch')
+        axs[1, 0].set_ylabel('Precision')
+        axs[1, 0].legend()
+        
+        # F1-Score Plot
+        axs[1, 1].plot(self.train_f1_scores, label='Training F1-Score')
+        if self.val_loader:
+            axs[1, 1].plot(self.val_f1_scores, label='Validation F1-Score')
+        axs[1, 1].set_title('F1-Score over epochs')
+        axs[1, 1].set_xlabel('Epoch')
+        axs[1, 1].set_ylabel('F1-Score')
+        axs[1, 1].legend()
         
         plt.tight_layout()
-        plt.savefig("exploration/outputs")
+        plt.savefig("exploration/training_metrics.png")
         plt.show()
+    
+    def plot_confusion_matrix(self, metrics):
+        """
+        Plot the confusion matrix from validation or training metrics.
+        
+        Args:
+            metrics: Dictionary containing 'confusion_matrix' key
+        """
+        plt.figure(figsize=(20,7))
+        sns.heatmap(
+            metrics['confusion_matrix'], 
+            annot=True, 
+            fmt='d', 
+            cmap='Blues'
+        )
+        plt.title('Confusion Matrix')
+        plt.ylabel('True Label')
+        plt.xlabel('Predicted Label')
+        plt.savefig('exploration/outputs/confusion_matrix.png')

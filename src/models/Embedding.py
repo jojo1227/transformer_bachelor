@@ -26,7 +26,7 @@ class Embedding(nn.Module):
         self.max_len = max_len
         
         # Embedding Layer mit optionalem Padding Index
-        # TODO Wofür ist dieser Padding index nötig?
+        # TODO Brauche ich hier eine andere vocab_size? muss das padding token hier mit eingeschlossen werden?
         # Anscheinend brauche ich den, damit das Modell weiß welcher der Padding Index ist und diesen nicht mit berechnet
         self.token_embedding = nn.Embedding(
             num_embeddings=vocab_size,
@@ -86,15 +86,13 @@ class Embedding(nn.Module):
         # Positional Encoding hinzufügen
         seq_len = x.size(1)
         embeddings = embeddings + self.positional_encoding[:, :seq_len].to("cuda" if torch.cuda.is_available() else "cpu")
-        print(attention_mask)
+        
         # Wenn Attention Mask vorhanden, maskierte Positionen auf 0 setzen
         # sorgt dafür, dass die Embeddings des Padding Tokens nicht berücksichtigt werden
         embeddings = embeddings * attention_mask.unsqueeze(-1)
             
         # Dropout anwenden
         embeddings = self.dropout(embeddings)
-        print("Embedding Layer")
-        print(x.shape)
         
         
         return embeddings
