@@ -10,6 +10,7 @@ class Embedding(nn.Module):
         embedding_dim: int,
         max_len: int,
         dropout_rate: float = 0.1,
+        padding_idx:  int = 0,
     ):
         """
         Args:
@@ -26,13 +27,19 @@ class Embedding(nn.Module):
         
         # Embedding Layer mit optionalem Padding Index
         # TODO Wofür ist dieser Padding index nötig?
+        # Anscheinend brauche ich den, damit das Modell weiß welcher der Padding Index ist und diesen nicht mit berechnet
         self.token_embedding = nn.Embedding(
             num_embeddings=vocab_size,
             embedding_dim=embedding_dim,
+            padding_idx=padding_idx,
         )
         
         # Dropout Layer
         self.dropout = nn.Dropout(p=dropout_rate)
+        self.positional_encoding = self._create_positional_encoding(max_len, embedding_dim)
+        
+        
+        # create positional encoding
         self.positional_encoding = self._create_positional_encoding(max_len, embedding_dim)
         
         
@@ -56,7 +63,9 @@ class Embedding(nn.Module):
         pos_encoding[:, 0::2] = torch.sin(position * div_term)
         pos_encoding[:, 1::2] = torch.cos(position * div_term)
         
-        # TODO Warum? 
+        # TODO Warum?
+        # Ermöglicht einfache Broadcast-Operationen mit Batch von Embeddings
+        # Wandelt die Form von (max_len, embedding_dim) zu (1, max_len, embedding_dim) 
         return pos_encoding.unsqueeze(0)
     
     def forward(self, x: torch.Tensor, attention_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
@@ -70,9 +79,14 @@ class Embedding(nn.Module):
         Returns:
             Embedded Tensor der Form (batch_size, seq_len, embedding_dim)
         """
+        print("Embedding Layer")
+        print(x.shape)
+        print(self.positional_encoding.shape)
+            
         # Token Embeddings
         embeddings = self.token_embedding(x) * math.sqrt(self.embedding_dim)
-        
+        print(embeddings.shape)
+
         # Positional Encoding hinzufügen
         seq_len = x.size(1)
         embeddings = embeddings + self.positional_encoding[:, :seq_len].to("cuda")

@@ -18,6 +18,7 @@ class EncoderClassifier(nn.Module):
         num_heads: int = 8,
         max_len: int = 512,
         dropout_rate: float = 0.1,
+        padding_idx: int = 0,
     ):
         """
         Args:
@@ -38,6 +39,7 @@ class EncoderClassifier(nn.Module):
             embedding_dim=embedding_dim,
             max_len=max_len,
             dropout_rate=dropout_rate,
+            padding_idx=padding_idx
         )
         
         # Transformer Encoder
