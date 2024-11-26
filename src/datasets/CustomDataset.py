@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 
+# TODO Attention mask and padding here
 class CustomDataset(Dataset):
     def __init__(self, sequences_path: str, targets_path: str):
         """

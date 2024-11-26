@@ -190,4 +190,5 @@ class Trainer:
         ax2.legend()
         
         plt.tight_layout()
+        plt.savefig("exploration/outputs")
         plt.show()

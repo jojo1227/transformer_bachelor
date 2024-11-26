@@ -78,6 +78,7 @@ class Embedding(nn.Module):
         embeddings = embeddings + self.positional_encoding[:, :seq_len].to("cuda")
         
         # Wenn Attention Mask vorhanden, maskierte Positionen auf 0 setzen
+        # TODO was ist das padding token? 
         if attention_mask is not None:
             embeddings = embeddings * attention_mask.unsqueeze(-1)
             

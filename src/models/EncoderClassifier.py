@@ -109,10 +109,13 @@ class EncoderClassifier(nn.Module):
         else:
             x = self.encoder(x)
             
+        # 
         # Global Max Pooling
         x = self.dropout(x)
         x = x.masked_fill(~attention_mask.unsqueeze(-1), float('-inf')) if attention_mask is not None else x
-        x = torch.max(x, dim=1)[0]
+        # TODO also try class token
+        # TODO take mean instead of max, only take mean over entries where attention mask is 1
+        x = torch.sum(x * attention_mask, dim=1) / (torch.sum(attention_mask, dim=1) + 1e-8)
         
         # Klassifikation
         logits = self.classifier(x)

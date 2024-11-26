@@ -36,6 +36,8 @@ class Encoder:
         
         return self
     
+
+    
     def encode_sequences(self, sequences: List[List[str]], targets: List[str]) -> Tuple[np.ndarray, np.ndarray]:
         """Konvertiert String-Sequenzen in numerische Arrays"""
         
@@ -47,6 +49,9 @@ class Encoder:
         
         return encoded_sequences, encoded_targets
     
+        # TODO Datensatz verfälscht? Random Teil der Seuqeunz nehmen, da sonst eine Sequenz oversampled wird. 
+        # TODO ist die Sequenzlänge zu kurz? Zufällig
+
     
     def split_long_sequences(
         self, 
