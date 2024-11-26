@@ -68,7 +68,7 @@ class Embedding(nn.Module):
         # Wandelt die Form von (max_len, embedding_dim) zu (1, max_len, embedding_dim) 
         return pos_encoding.unsqueeze(0)
     
-    def forward(self, x: torch.Tensor, attention_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         """
         Forward Pass des Embedding Layers.
         
@@ -79,24 +79,22 @@ class Embedding(nn.Module):
         Returns:
             Embedded Tensor der Form (batch_size, seq_len, embedding_dim)
         """
-        print("Embedding Layer")
-        print(x.shape)
-        print(self.positional_encoding.shape)
-            
+                   
         # Token Embeddings
         embeddings = self.token_embedding(x) * math.sqrt(self.embedding_dim)
-        print(embeddings.shape)
 
         # Positional Encoding hinzufügen
         seq_len = x.size(1)
-        embeddings = embeddings + self.positional_encoding[:, :seq_len].to("cuda")
-        
+        embeddings = embeddings + self.positional_encoding[:, :seq_len].to("cuda" if torch.cuda.is_available() else "cpu")
+        print(attention_mask)
         # Wenn Attention Mask vorhanden, maskierte Positionen auf 0 setzen
-        # TODO was ist das padding token? 
-        if attention_mask is not None:
-            embeddings = embeddings * attention_mask.unsqueeze(-1)
+        # sorgt dafür, dass die Embeddings des Padding Tokens nicht berücksichtigt werden
+        embeddings = embeddings * attention_mask.unsqueeze(-1)
             
         # Dropout anwenden
         embeddings = self.dropout(embeddings)
+        print("Embedding Layer")
+        print(x.shape)
+        
         
         return embeddings

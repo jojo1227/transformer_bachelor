@@ -46,16 +46,16 @@ class EncoderClassifier(nn.Module):
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=embedding_dim,
             nhead=num_heads,
-            # dim_feedforward=4 * embedding_dim, #default ist hier 2048 
-            # dropout=dropout_rate,
-            # activation='gelu', #standard ist relu, gelu soll aber angeblich besser sein
+            dim_feedforward=4 * embedding_dim, #default ist hier 2048 
+            dropout=dropout_rate,
+            activation='gelu', #standard ist relu, gelu soll aber angeblich besser sein
             batch_first=True
         )
         
         self.encoder = nn.TransformerEncoder(
             encoder_layer,
-            num_layers=num_encoder_layers
-            # norm=nn.LayerNorm(embedding_dim)
+            num_layers=num_encoder_layers,
+            norm=nn.LayerNorm(embedding_dim)
         )
         
         # Dropout für Regularisierung
@@ -63,15 +63,17 @@ class EncoderClassifier(nn.Module):
         
         # Klassifikations-Layer
         # TODO Wie muss ich den hier genau gestalten. 
-        # ist das zu kompliziert? 
-        # self.classifier = nn.Sequential(
-        #    nn.Linear(embedding_dim, embedding_dim),
-        #    nn.GELU(),
-        #    nn.Dropout(dropout_rate),
-        #    nn.Linear(embedding_dim, num_classes)
-        #)
+         #ist das zu kompliziert? 
+        self.classifier = nn.Sequential(
+            nn.Linear(embedding_dim, embedding_dim),
+            nn.GELU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(embedding_dim, num_classes)
+        )
         
-        self.classifier = nn.Linear(embedding_dim, num_classes)
+        # TODO was ist eigentich mit dem FInal Layer für die Klassifizierung? (Softmax?)
+        #einfache Variante
+        #self.classifier = nn.Linear(embedding_dim, num_classes)
         
         # Parameter Initialisierung
         # TODO macht das hier einen Unterschied mit dem init weigths 
@@ -88,7 +90,7 @@ class EncoderClassifier(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None
+        attention_mask: torch.Tensor
     ) -> torch.Tensor:
         """
         Forward Pass des Models.
@@ -104,53 +106,26 @@ class EncoderClassifier(nn.Module):
         x = self.embedding(x, attention_mask)
         
         # Transformer Encoder
-        if attention_mask is not None:
-            # Maske für den Transformer (True für padding positions)
-            padding_mask = ~attention_mask.bool()
-            x = self.encoder(x, src_key_padding_mask=padding_mask)
-        else:
-            x = self.encoder(x)
-            
-        # 
+        # Maske für den Transformer (True für padding positions)
+        # gibt an welche Positionen ignoriert werden sollen
+        padding_mask = ~attention_mask.bool()
+        x = self.encoder(x, src_key_padding_mask=padding_mask)
+        
+       
         # Global Max Pooling
+        # hier wird jetzt alle padding tokens mit -inf ersetzt, da diese so in der Berechnung nicht verwendet werden. 
         x = self.dropout(x)
-        x = x.masked_fill(~attention_mask.unsqueeze(-1), float('-inf')) if attention_mask is not None else x
+        # x = x.masked_fill(padding_mask.unsqueeze(-1), float('-inf'))
+        
         # TODO also try class token
         # TODO take mean instead of max, only take mean over entries where attention mask is 1
-        x = torch.sum(x * attention_mask, dim=1) / (torch.sum(attention_mask, dim=1) + 1e-8)
+        x = torch.sum(x * attention_mask[..., None], dim=1) / (torch.sum(attention_mask[..., None], dim=1) + 1e-8)
+        print(x.shape)
         
         # Klassifikation
         logits = self.classifier(x)
+        print(logits.shape)
         
         return logits
     
-    def get_attention_weights(
-        self,
-        x: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None
-    ) -> list:
-        """
-        Extrahiert die Attention Weights für Visualisierung.
-        Muss im eval() Modus aufgerufen werden.
-        
-        Returns:
-            Liste von Attention Weights für jeden Layer
-        """
-        attention_weights = []
-        
-        def hook_fn(module, input, output):
-            attention_weights.append(output[1])
-            
-        hooks = []
-        for layer in self.encoder.layers:
-            hooks.append(layer.self_attn.register_forward_hook(hook_fn))
-            
-        # Forward pass
-        with torch.no_grad():
-            self.forward(x, attention_mask)
-            
-        # Hooks entfernen
-        for hook in hooks:
-            hook.remove()
-            
-        return attention_weights
+  

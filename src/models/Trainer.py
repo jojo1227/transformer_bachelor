@@ -49,14 +49,15 @@ class Trainer:
         # Progress bar
         progress_bar = tqdm(self.train_loader, desc="Training")
         
-        for sequences, labels in progress_bar:
+        for sequences, labels, attention_masks in progress_bar:
             # Daten auf device verschieben
             sequences = sequences.to(self.device)
             labels = labels.to(self.device)
+            attention_masks = attention_masks.to(self.device)
             
             # Forward pass
             self.optimizer.zero_grad() #Gradienten werden zurückgesetzt
-            outputs = self.model(sequences)  # Kein attention_mask mehr nötig
+            outputs = self.model(sequences, attention_masks)  
             
             # Loss berechnen
             loss = self.criterion(outputs, labels)
@@ -98,13 +99,14 @@ class Trainer:
         progress_bar = tqdm(self.val_loader, desc="Validating")
 
         
-        for sequences, targets in progress_bar:
+        for sequences, targets, attention_masks in progress_bar:
             # Daten auf device verschieben
             sequences = sequences.to(self.device)
             labels = targets.to(self.device)
+            attention_masks = attention_masks.to(self.device)
             
             # Forward pass
-            outputs = self.model(sequences)
+            outputs = self.model(sequences, attention_masks)
             loss = self.criterion(outputs, labels)
             
             # Metriken berechnen
