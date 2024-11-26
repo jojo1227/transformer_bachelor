@@ -291,7 +291,7 @@ class Trainer:
         Args:
             metrics: Dictionary containing 'confusion_matrix' key
         """
-        plt.figure(figsize=(20,7))
+        plt.figure(figsize=(20,20))
         sns.heatmap(
             metrics['confusion_matrix'], 
             annot=True, 
