@@ -7,7 +7,8 @@ from typing import Dict, List, Optional
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
 import seaborn as sns
-
+import wandb
+from datetime import datetime
 class Trainer:
     def __init__(
         self,
@@ -53,6 +54,8 @@ class Trainer:
         self.val_f1_scores: List[float] = []
     
     def train_epoch(self) -> Dict[str, float]:
+        
+            
         """Train the model for one epoch and collect detailed metrics."""
         self.model.train()
         total_loss = 0
@@ -112,12 +115,12 @@ class Trainer:
         confusion_mat = confusion_matrix(all_labels, all_predictions)
         
         return {
-            'loss': avg_loss, 
-            'accuracy': accuracy,
-            'precision': precision,
-            'recall': recall,
-            'f1_score': f1,
-            'confusion_matrix': confusion_mat
+            'train/loss': avg_loss, 
+            'train/accuracy': accuracy,
+            'train/precision': precision,
+            'train/recall': recall,
+            'train/f1_score': f1,
+            'train/confusion_matrix': confusion_mat
         }
     
     @torch.no_grad()
@@ -168,12 +171,12 @@ class Trainer:
         confusion_mat = confusion_matrix(all_labels, all_predictions)
         
         return {
-            'loss': avg_loss, 
-            'accuracy': accuracy,
-            'precision': precision,
-            'recall': recall,
-            'f1_score': f1,
-            'confusion_matrix': confusion_mat
+            'val/loss': avg_loss, 
+            'val/accuracy': accuracy,
+            'val/precision': precision,
+            'val/recall': recall,
+            'val/f1_score': f1,
+            'val/confusion_matrix': confusion_mat
         }
     
     def train(
@@ -190,6 +193,21 @@ class Trainer:
             save_path: Path to save the best model
             early_stopping_patience: Epochs to wait before stopping training
         """
+        
+        wandb.init(
+            # Set the project where this run will be logged
+            project="basic-modell",
+            # We pass a run name (otherwise it’ll be randomly assigned, like sunshine-lollypop-10)
+            name=f"experiment_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            # Track hyperparameters and run metadata
+            config={
+            "learning_rate": 0.001,
+            "architecture": "TRANSFORMER ENCODER",
+            "dataset": "cadets-e3-v2",
+            "epochs": 100,
+            "dropout" : 0.1
+        })
+        
         best_val_loss = float('inf')
         patience_counter = 0
         
@@ -198,38 +216,42 @@ class Trainer:
             
             # Training
             train_metrics = self.train_epoch()
-            self.train_losses.append(train_metrics['loss'])
-            self.train_accuracies.append(train_metrics['accuracy'])
-            self.train_precisions.append(train_metrics.get('precision', 0))
-            self.train_recalls.append(train_metrics.get('recall', 0))
-            self.train_f1_scores.append(train_metrics.get('f1_score', 0))
+            self.train_losses.append(train_metrics['train/loss'])
+            self.train_accuracies.append(train_metrics['train/accuracy'])
+            self.train_precisions.append(train_metrics.get('train/precision', 0))
+            self.train_recalls.append(train_metrics.get('train/recall', 0))
+            self.train_f1_scores.append(train_metrics.get('train/f1_score', 0))
             
             # Detailed training metrics output
-            print(f"Train Loss: {train_metrics['loss']:.4f}")
-            print(f"Train Accuracy: {train_metrics['accuracy']:.4f}")
-            print(f"Train Precision: {train_metrics.get('precision', 'N/A'):.4f}")
-            print(f"Train Recall: {train_metrics.get('recall', 'N/A'):.4f}")
-            print(f"Train F1-Score: {train_metrics.get('f1_score', 'N/A'):.4f}")
+            print(f"Train Loss: {train_metrics['train/loss']:.4f}")
+            print(f"Train Accuracy: {train_metrics['train/accuracy']:.4f}")
+            print(f"Train Precision: {train_metrics.get('train/precision', 'N/A'):.4f}")
+            print(f"Train Recall: {train_metrics.get('train/recall', 'N/A'):.4f}")
+            print(f"Train F1-Score: {train_metrics.get('train/f1_score', 'N/A'):.4f}")
+            
+            wandb.log(train_metrics)
             
             # Validation
             if self.val_loader:
                 val_metrics = self.validate()
-                self.val_losses.append(val_metrics['loss'])
-                self.val_accuracies.append(val_metrics['accuracy'])
-                self.val_precisions.append(val_metrics.get('precision', 0))
-                self.val_recalls.append(val_metrics.get('recall', 0))
-                self.val_f1_scores.append(val_metrics.get('f1_score', 0))
+                self.val_losses.append(val_metrics['val/loss'])
+                self.val_accuracies.append(val_metrics['val/accuracy'])
+                self.val_precisions.append(val_metrics.get('val/precision', 0))
+                self.val_recalls.append(val_metrics.get('val/recall', 0))
+                self.val_f1_scores.append(val_metrics.get('val/f1_score', 0))
                 
                 # Detailed validation metrics output
-                print(f"Val Loss: {val_metrics['loss']:.4f}")
-                print(f"Val Accuracy: {val_metrics['accuracy']:.4f}")
-                print(f"Val Precision: {val_metrics.get('precision', 'N/A'):.4f}")
-                print(f"Val Recall: {val_metrics.get('recall', 'N/A'):.4f}")
-                print(f"Val F1-Score: {val_metrics.get('f1_score', 'N/A'):.4f}")
+                print(f"Val Loss: {val_metrics['val/loss']:.4f}")
+                print(f"Val Accuracy: {val_metrics['val/accuracy']:.4f}")
+                print(f"Val Precision: {val_metrics.get('val/precision', 'N/A'):.4f}")
+                print(f"Val Recall: {val_metrics.get('val/recall', 'N/A'):.4f}")
+                print(f"Val F1-Score: {val_metrics.get('val/f1_score', 'N/A'):.4f}")
+                
+                wandb.log(val_metrics)
                 
                 # Early Stopping & Model Saving
-                if val_metrics['loss'] < best_val_loss:
-                    best_val_loss = val_metrics['loss']
+                if val_metrics['val/loss'] < best_val_loss:
+                    best_val_loss = val_metrics['val/loss']
                     patience_counter = 0
                     if save_path:
                         torch.save(self.model.state_dict(), save_path)
@@ -282,7 +304,7 @@ class Trainer:
         axs[1, 1].legend()
         
         plt.tight_layout()
-        plt.savefig("exploration/training_metrics.png")
+        plt.savefig("exploration/outputs/training_metrics.png")
         plt.show()
     
     def plot_confusion_matrix(self, metrics):
@@ -304,7 +326,7 @@ class Trainer:
         plt.xlabel('Predicted Label')
         plt.savefig('exploration/outputs/confusion_matrix.png')
         
-        
+    # TODO das hier muss noch angepasst werden
     def plot_confusion_matrix_normalized(self, metrics):
         
         """

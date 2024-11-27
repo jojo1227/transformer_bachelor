@@ -3,3 +3,4 @@ docker_volume/
 myvenv/
 models/
 .venv
+wandb/
