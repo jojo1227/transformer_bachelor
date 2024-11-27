@@ -233,16 +233,17 @@ class Trainer:
                     patience_counter = 0
                     if save_path:
                         torch.save(self.model.state_dict(), save_path)
-                    self.plot_confusion_matrix(val_metrics)
                 else:
                     patience_counter += 1
                     if patience_counter >= early_stopping_patience:
                         print(f"\nEarly stopping triggered after epoch {epoch+1}")
                         break
+                self.plot_confusion_matrix
+                self.plot_metrics
     
     def plot_metrics(self):
         """Plot training and validation metrics."""
-        fig, axs = plt.subplots(2, 2, figsize=(15, 10))
+        fig, axs = plt.subplots(2, 2, figsize=(20, 15))
         
         # Loss Plot
         axs[0, 0].plot(self.train_losses, label='Training Loss')

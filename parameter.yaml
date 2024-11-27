@@ -1,10 +1,10 @@
 data:
-  max_seq_length: 512
+  max_seq_length: 150
   num_classes: 41
   vocab_size: 31
 model:
   dropout_rate: 0.1
-  embedding_dim: 512
+  embedding_dim: 32
   num_encoder_layers: 3
   num_heads: 4
 training:
