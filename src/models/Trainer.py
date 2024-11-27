@@ -302,3 +302,31 @@ class Trainer:
         plt.ylabel('True Label')
         plt.xlabel('Predicted Label')
         plt.savefig('exploration/outputs/confusion_matrix.png')
+        
+        
+    def plot_confusion_matrix_normalized(self, metrics):
+        
+        """
+        Plot a normalized confusion matrix from validation or training metrics.
+        
+        Args:
+            metrics: Dictionary containing 'confusion_matrix' key.
+        """
+        # Normiere die Konfusionsmatrix (Zeilenweise)
+        cm = metrics['confusion_matrix']
+        cm_normalized = cm.astype('float') / cm.sum(axis=1, keepdims=True)
+
+        # Erstelle das Heatmap-Plot
+        plt.figure(figsize=(20, 20))
+        sns.heatmap(
+            cm_normalized, 
+            annot=True, 
+            fmt='.2f',  # Zwei Dezimalstellen für Prozentsätze
+            cmap='Blues',
+           
+        )
+        plt.title('Normalized Confusion Matrix')
+        plt.ylabel('True Label')
+        plt.xlabel('Predicted Label')
+        plt.savefig('exploration/outputs/confusion_matrix.png')
+        plt.show()
