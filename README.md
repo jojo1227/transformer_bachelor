@@ -77,9 +77,6 @@ Zur Evaluation eines trainierten Modells und Generierung von Metriken für Testd
 
 ## Hardware-Empfehlungen
 
-- 16GB RAM oder mehr empfohlen
+- min 12GB auf der GPU empfohlen
 - Das Training benötigt eine CUDA-fähige GPU
 
-## Kontakt
-
-Bei Fragen oder Problemen öffnen Sie bitte ein Issue in diesem Repository.
