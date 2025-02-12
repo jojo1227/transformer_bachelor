@@ -3,3 +3,8 @@ matplotlib
 scikit-learn
 pyyaml
 tqdm
+torch
+wandb
+psycopg2-binary
+pandas
+scipy

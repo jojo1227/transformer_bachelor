@@ -1,0 +1,31 @@
+Parameter,Bester Wert,Durchschn. F1 Macro,Durchschn. F1 Weighted,Min F1 Macro,Min F1 Weighted,Max F1 Macro,Max F1 Weighted,Std.abw. Macro,Std.abw. Weighted,n
+Modell Dimension,"    512.0
+Name: 2, dtype: float64",50.16%,82.84%,0.00%,0.00%,86.30%,95.91%,27.31%,22.08%,35.0
+Anzahl der Encoder Schichten,"    1.0
+Name: 0, dtype: float64",53.17%,84.50%,0.81%,6.69%,84.26%,95.67%,28.07%,21.69%,23.0
+Anzahl der Attention Köpfe,"    8.0
+Name: 2, dtype: float64",50.30%,81.67%,0.00%,0.00%,86.30%,95.91%,28.52%,24.61%,32.0
+Batch Größe,"    128.0
+Name: 1, dtype: float64",52.72%,83.74%,1.56%,15.79%,86.30%,95.91%,26.88%,22.42%,35.0
+Learning Rate,"    0.00001
+Name: 1, dtype: float64",51.38%,85.01%,0.00%,0.00%,86.30%,95.91%,25.46%,22.50%,27.0
+Dropout Rate,"    0.2
+Name: 1, dtype: float64",50.46%,82.85%,0.81%,6.69%,86.30%,95.54%,26.76%,22.94%,27.0
+Activierungsfunktion,"    relu
+Name: 1, dtype: object",46.29%,79.69%,0.63%,3.76%,84.26%,95.91%,28.34%,25.20%,55.0
+Norm First,"    True
+Name: 1, dtype: object",48.70%,81.24%,0.00%,0.00%,86.30%,95.91%,28.17%,23.96%,49.0
+Pooling-Typ,"    cls
+Name: 0, dtype: object",49.09%,79.97%,0.00%,0.00%,86.30%,95.91%,28.86%,26.46%,53.0
+Focal Cross Entropy Loss γ,"    2.0
+Name: 2, dtype: float64",48.94%,84.88%,3.66%,31.58%,81.77%,95.66%,26.02%,17.55%,24.0
+Optimizer,"    adamw
+Name: 1, dtype: object",65.35%,92.32%,1.56%,15.79%,86.30%,95.67%,15.87%,11.26%,53.0
+Learning Rate Scheduler,"    CosineAnnealingLR
+Name: 0, dtype: object",45.98%,80.24%,0.00%,0.00%,86.30%,95.67%,27.76%,25.79%,51.0
+L2-Regularisierung (weight_decay),"    0.0
+Name: 0, dtype: float64",62.30%,90.12%,1.56%,15.79%,86.30%,95.91%,18.85%,15.38%,29.0
+Label-Smoothing,"    0.1
+Name: 3, dtype: float64",47.38%,82.11%,1.77%,26.99%,84.26%,95.66%,29.20%,19.83%,22.0
+L1-Regularisierung (l1_lambda),"    0.0
+Name: 0, dtype: float64",47.48%,80.30%,0.63%,6.69%,86.30%,95.91%,28.38%,25.99%,33.0

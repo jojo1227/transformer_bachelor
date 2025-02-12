@@ -1,98 +1,93 @@
-import torch
 import torch.nn as nn
-import math
-from typing import Optional
 
-class Embedding(nn.Module):
+class FeatureEmbedding(nn.Module):
     def __init__(
         self,
-        vocab_size: int,
-        embedding_dim: int,
-        max_len: int,
-        dropout_rate: float = 0.1,
-        padding_idx:  int = 0,
+        d_model: int,
+        event_types_cardinality: int = 29,
+        users_cardinality: int = 16,
+        addr_cardinality: int = 4,
+        port_cardinality: int = 9,
+        dropout: float = 0.1
     ):
-        """
-        Args:
-            vocab_size: Größe des Vokabulars
-            embedding_dim: Dimensionalität der Embeddings
-            max_len: Maximale Sequenzlänge
-            dropout_rate: Dropout-Rate
-            padding_idx: Index für Padding-Token (optional)
-        """
-        super(Embedding, self).__init__()
+        super().__init__()
         
-        self.embedding_dim = embedding_dim
-        self.max_len = max_len
+        # Embedding Dimensionen
+        self.event_dim = 32
+        self.user_dim = 16
+        self.addr_dim = 8
+        self.port_dim = 8
         
-        # Embedding Layer mit optionalem Padding Index
-        # TODO Brauche ich hier eine andere vocab_size? muss das padding token hier mit eingeschlossen werden?
-        # Anscheinend brauche ich den, damit das Modell weiß welcher der Padding Index ist und diesen nicht mit berechnet
-        self.token_embedding = nn.Embedding(
-            num_embeddings=vocab_size,
-            embedding_dim=embedding_dim,
-            padding_idx=padding_idx,
-        )
+        # Embeddings für kategorische Features
+        self.event_embedding = nn.Embedding(event_types_cardinality, self.event_dim)
+        self.user_embedding = nn.Embedding(users_cardinality, self.user_dim)
+        self.addr_embedding = nn.Embedding(addr_cardinality, self.addr_dim)
+        self.port_embedding = nn.Embedding(port_cardinality, self.port_dim)
         
-        # Dropout Layer
-        self.dropout = nn.Dropout(p=dropout_rate)
-        self.positional_encoding = self._create_positional_encoding(max_len, embedding_dim)
+        # Lineare Projektionen auf d_model
+        self.event_proj = nn.Linear(self.event_dim, d_model)
+        self.user_proj = nn.Linear(self.user_dim, d_model)
+        self.addr_proj = nn.Linear(self.addr_dim, d_model)
+        self.port_proj = nn.Linear(self.port_dim, d_model)
+        self.size_proj = nn.Linear(1, d_model)
+        self.path_proj = nn.Linear(96, d_model)  # 96 = 2 * 48 (PATH_EMBEDDINGS)
         
-        
-        # create positional encoding
-        self.positional_encoding = self._create_positional_encoding(max_len, embedding_dim)
-        
-        
-    def _create_positional_encoding(self, max_len: int, embedding_dim: int) -> torch.Tensor:
-        """
-        Erstellt das Positional Encoding Matrix.
-        
-        Args:
-            max_len: Maximale Sequenzlänge
-            embedding_dim: Dimensionalität der Embeddings
-            
-        Returns:
-            Positional Encoding Matrix der Form (1, max_len, embedding_dim)
-        """
-        position = torch.arange(max_len).unsqueeze(1)
-        div_term = torch.exp(
-            torch.arange(0, embedding_dim, 2) * (-math.log(10000.0) / embedding_dim)
-        )
-        
-        pos_encoding = torch.zeros(max_len, embedding_dim)
-        pos_encoding[:, 0::2] = torch.sin(position * div_term)
-        pos_encoding[:, 1::2] = torch.cos(position * div_term)
-        
-        # TODO Warum?
-        # Ermöglicht einfache Broadcast-Operationen mit Batch von Embeddings
-        # Wandelt die Form von (max_len, embedding_dim) zu (1, max_len, embedding_dim) 
-        return pos_encoding.unsqueeze(0)
+        self.dropout = nn.Dropout(dropout)
+        self.layer_norm = nn.LayerNorm(d_model)
     
-    def forward(self, x: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+    def embed_network_pair(self, local_ip, local_port, remote_ip, remote_port):
+        """Verarbeitet ein Paar von Netzwerk-Features (lokal und remote)"""
+        local_ip_emb = self.addr_proj(self.addr_embedding(local_ip))
+        local_port_emb = self.port_proj(self.port_embedding(local_port))
+        remote_ip_emb = self.addr_proj(self.addr_embedding(remote_ip))
+        remote_port_emb = self.port_proj(self.port_embedding(remote_port))
+        
+        return local_ip_emb + local_port_emb + remote_ip_emb + remote_port_emb
+        
+    def forward(self, x):
         """
-        Forward Pass des Embedding Layers.
-        
-        Args:
-            x: Input Tensor der Form (batch_size, seq_len)
-            attention_mask: Optional mask für die Attention (batch_size, seq_len)
-            
-        Returns:
-            Embedded Tensor der Form (batch_size, seq_len, embedding_dim)
+        Input: x shape [batch_size, seq_len, 107]
+        Output: shape [batch_size, seq_len, d_model]
         """
-                   
-        # Token Embeddings
-        embeddings = self.token_embedding(x) * math.sqrt(self.embedding_dim)
-
-        # Positional Encoding hinzufügen
-        seq_len = x.size(1)
-        embeddings = embeddings + self.positional_encoding[:, :seq_len].to("cuda" if torch.cuda.is_available() else "cpu")
+        # Basis-Features
+        event = x[:, :, 0].long()
+        user = x[:, :, 1].long()
+        size = x[:, :, 10:11]
+        paths = x[:, :, 11:]
         
-        # Wenn Attention Mask vorhanden, maskierte Positionen auf 0 setzen
-        # sorgt dafür, dass die Embeddings des Padding Tokens nicht berücksichtigt werden
-        embeddings = embeddings * attention_mask.unsqueeze(-1)
-            
-        # Dropout anwenden
-        embeddings = self.dropout(embeddings)
+        # Netzwerk-Features aufteilen
+        local_ip1 = x[:, :, 2].long()
+        local_port1 = x[:, :, 3].long()
+        remote_ip1 = x[:, :, 4].long()
+        remote_port1 = x[:, :, 5].long()
         
+        local_ip2 = x[:, :, 6].long()
+        local_port2 = x[:, :, 7].long()
+        remote_ip2 = x[:, :, 8].long()
+        remote_port2 = x[:, :, 9].long()
         
-        return embeddings
+        # Basis-Embeddings
+        event_emb = self.event_proj(self.event_embedding(event))
+        user_emb = self.user_proj(self.user_embedding(user))
+        size_emb = self.size_proj(size)
+        path_emb = self.path_proj(paths)
+        
+        # Netzwerk-Embeddings
+        net_pair1_emb = self.embed_network_pair(local_ip1, local_port1, remote_ip1, remote_port1)
+        net_pair2_emb = self.embed_network_pair(local_ip2, local_port2, remote_ip2, remote_port2)
+        netinfo_emb = net_pair1_emb + net_pair2_emb
+        
+        # Kombiniere alle Features
+        combined = (
+            event_emb + 
+            user_emb + 
+            netinfo_emb + 
+            size_emb + 
+            path_emb
+        )
+        
+        # Normalisierung und Dropout
+        output = self.layer_norm(combined)
+        output = self.dropout(output)
+        
+        return output

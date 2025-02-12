@@ -1,6 +1,8 @@
 data/
 docker_volume/
 myvenv/
-models/
+models
 .venv
 wandb/
+outputs
+logs/
